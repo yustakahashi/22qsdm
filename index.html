@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>22q11.2欠失症候群 共同意思決定手帳</title>
+  <!-- Google Fonts: Noto Sans JP -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <!-- Bootstrap CSS (CDN) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Chart.js 用の日付アダプター -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <!-- SheetJS (xlsx) ライブラリ -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background-color: #f7f9fc;
+      padding-top: 20px;
+    }
+    header {
+      background: linear-gradient(135deg, #74ABE2, #5563DE);
+      color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    header h1 { font-weight: 700; }
+    .nav-tabs .nav-link.active {
+      background-color: #5563DE;
+      color: #fff;
+    }
+    .tab-pane { margin-top: 20px; }
+    footer {
+      margin-top: 40px;
+      padding: 10px;
+      text-align: center;
+      color: #777;
+    }
+    /* 各チャートの固定高さ */
+    #timelineChartCanvas, #growthChartHeight, #growthChartWeight {
+      height: 400px !important;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>22q11.2欠失症候群 共同意思決定手帳</h1>
+    <p>～多面的な支援情報の一元化でご家族の不安を軽減し、連携を強化～</p>
+    <p class="small">（研究事務局：高橋優輔・熊倉陽介・笠井清登 / Zoom 2025年1月14日 19時～20時）</p>
+  </header>
+  
+  <!-- タブメニュー（各タブのタイトル） -->
+  <ul class="nav nav-tabs" id="recordTab" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="family-tab" data-bs-toggle="tab" data-bs-target="#tab-family" type="button" role="tab" aria-controls="tab-family" aria-selected="true">子育て記録（ご家族用）</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="support-tab" data-bs-toggle="tab" data-bs-target="#tab-support" type="button" role="tab" aria-controls="tab-support" aria-selected="false">子育て記録（支援者用）</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="medical-tab" data-bs-toggle="tab" data-bs-target="#tab-medical" type="button" role="tab" aria-controls="tab-medical" aria-selected="false">病気・困りごと記録</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="supporter-tab" data-bs-toggle="tab" data-bs-target="#tab-supporter" type="button" role="tab" aria-controls="tab-supporter" aria-selected="false">支援者記録</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#tab-timeline" type="button" role="tab" aria-controls="tab-timeline" aria-selected="false">タイムライン可視化</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="transition-tab" data-bs-toggle="tab" data-bs-target="#tab-transition" type="button" role="tab" aria-controls="tab-transition" aria-selected="false">トランジションチェックリスト</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="sharednote-tab" data-bs-toggle="tab" data-bs-target="#tab-sharedNote" type="button" role="tab" aria-controls="tab-sharedNote" aria-selected="false">共有連絡ノート</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="growth-tab" data-bs-toggle="tab" data-bs-target="#tab-growth" type="button" role="tab" aria-controls="tab-growth" aria-selected="false">成長記録</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="summary-tab" data-bs-toggle="tab" data-bs-target="#tab-summary" type="button" role="tab" aria-controls="tab-summary" aria-selected="false">結果一覧</button>
+    </li>
+  </ul>
+  
+  <!-- タブコンテンツ -->
+  <div class="tab-content" id="recordTabContent">
+  
+    <!-- 1. 子育て記録（ご家族用） -->
+    <div class="tab-pane fade show active" id="tab-family" role="tabpanel" aria-labelledby="family-tab">
+      <h3 class="mt-3">子育て記録（ご家族用）</h3>
+      <form id="familyForm" class="mb-4">
+        <div class="mb-3">
+          <label for="familyDate" class="form-label">年月日</label>
+          <input type="date" class="form-control" id="familyDate" required>
+        </div>
+        <div class="mb-3">
+          <label for="familyEvent" class="form-label">できごと</label>
+          <input type="text" class="form-control" id="familyEvent" placeholder="例：出生、入院" required>
+        </div>
+        <div class="mb-3">
+          <label for="familyMessage" class="form-label">思い・メッセージ</label>
+          <textarea class="form-control" id="familyMessage" rows="3" placeholder="ご家族の思いなど"></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="familyTags" class="form-label">タグ（複数選択可）</label>
+          <select class="form-select" id="familyTags" multiple>
+            <option value="出生">出生</option>
+            <option value="入院">入院</option>
+            <option value="手術">手術</option>
+            <option value="退院">退院</option>
+            <option value="検査">検査</option>
+            <option value="成長">成長</option>
+            <option value="学習">学習</option>
+            <option value="支援">支援</option>
+            <option value="不安">不安</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">記録を追加</button>
+      </form>
+      <h4>記録一覧</h4>
+      <table class="table table-bordered" id="familyTable">
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>年月日</th>
+            <th>できごと</th>
+            <th>思い・メッセージ</th>
+            <th>タグ</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  
+    <!-- 2. 子育て記録（支援者用） -->
+    <div class="tab-pane fade" id="tab-support" role="tabpanel" aria-labelledby="support-tab">
+      <h3 class="mt-3">子育て記録（支援者用）</h3>
+      <form id="supportForm" class="mb-4">
+        <div class="mb-3">
+          <label for="supportDate" class="form-label">年月日</label>
+          <input type="date" class="form-control" id="supportDate" required>
+        </div>
+        <div class="mb-3">
+          <label for="supportEvent" class="form-label">できごと</label>
+          <input type="text" class="form-control" id="supportEvent" placeholder="例：入院、治療開始" required>
+        </div>
+        <div class="mb-3">
+          <label for="supportMessage" class="form-label">思い・メッセージ</label>
+          <textarea class="form-control" id="supportMessage" rows="3" placeholder="支援者としてのコメント"></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="supportTags" class="form-label">タグ（複数選択可）</label>
+          <select class="form-select" id="supportTags" multiple>
+            <option value="入院">入院</option>
+            <option value="治療開始">治療開始</option>
+            <option value="相談">相談</option>
+            <option value="経過">経過</option>
+            <option value="連携">連携</option>
+            <option value="支援">支援</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">記録を追加</button>
+      </form>
+      <h4>記録一覧</h4>
+      <table class="table table-bordered" id="supportTable">
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>年月日</th>
+            <th>できごと</th>
+            <th>思い・メッセージ</th>
+            <th>タグ</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  
+    <!-- 3. 病気・困りごと記録 -->
+    <div class="tab-pane fade" id="tab-medical" role="tabpanel" aria-labelledby="medical-tab">
+      <h3 class="mt-3">病気・困りごと記録</h3>
+      <form id="medicalForm" class="mb-4">
+        <div class="mb-3">
+          <label for="medicalName" class="form-label">病名</label>
+          <input type="text" class="form-control" id="medicalName" placeholder="例：先天性心疾患" required>
+        </div>
+        <div class="mb-3">
+          <label for="medicalOnset" class="form-label">発症時期</label>
+          <input type="text" class="form-control" id="medicalOnset" placeholder="例：生後2週間" required>
+        </div>
+        <div class="mb-3">
+          <label for="medicalMemo" class="form-label">メモ（治療経過、困りごと）</label>
+          <textarea class="form-control" id="medicalMemo" rows="3" placeholder="治療の経過など"></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="medicalTags" class="form-label">タグ（複数選択可）</label>
+          <select class="form-select" id="medicalTags" multiple>
+            <option value="手術">手術</option>
+            <option value="治療">治療</option>
+            <option value="入院">入院</option>
+            <option value="検査">検査</option>
+            <option value="経過">経過</option>
+            <option value="再診">再診</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">記録を追加</button>
+      </form>
+      <h4>記録一覧</h4>
+      <table class="table table-bordered" id="medicalTable">
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>病名</th>
+            <th>発症時期</th>
+            <th>メモ</th>
+            <th>タグ</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  
+    <!-- 4. 支援者記録 -->
+    <div class="tab-pane fade" id="tab-supporter" role="tabpanel" aria-labelledby="supporter-tab">
+      <h3 class="mt-3">支援者記録</h3>
+      <form id="supporterForm" class="mb-4">
+        <div class="mb-3">
+          <label for="supporterPeriod" class="form-label">期間</label>
+          <input type="text" class="form-control" id="supporterPeriod" placeholder="例：2020年4月～2021年3月" required>
+        </div>
+        <div class="mb-3">
+          <label for="supporterName" class="form-label">支援者のお名前</label>
+          <input type="text" class="form-control" id="supporterName" required>
+        </div>
+        <div class="mb-3">
+          <label for="supporterRole" class="form-label">職種</label>
+          <input type="text" class="form-control" id="supporterRole" placeholder="例：医師、看護師、ソーシャルワーカー" required>
+        </div>
+        <div class="mb-3">
+          <label for="supporterContact" class="form-label">連絡先</label>
+          <input type="text" class="form-control" id="supporterContact" placeholder="電話番号、メールアドレスなど">
+        </div>
+        <div class="mb-3">
+          <label for="supporterNote" class="form-label">備考</label>
+          <textarea class="form-control" id="supporterNote" rows="3" placeholder="その他のメモ"></textarea>
+        </div>
+        <div class="mb-3">
+          <label for="supporterTags" class="form-label">タグ（複数選択可）</label>
+          <select class="form-select" id="supporterTags" multiple>
+            <option value="相談">相談</option>
+            <option value="連携">連携</option>
+            <option value="支援">支援</option>
+            <option value="指導">指導</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary">記録を追加</button>
+      </form>
+      <h4>記録一覧</h4>
+      <table class="table table-bordered" id="supporterTable">
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>期間</th>
+            <th>支援者のお名前</th>
+            <th>職種</th>
+            <th>連絡先</th>
+            <th>備考</th>
+            <th>タグ</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  
+    <!-- 5. タイムライン可視化 -->
+    <div class="tab-pane fade" id="tab-timeline" role="tabpanel" aria-labelledby="timeline-tab">
+      <h3 class="mt-3">タイムライン可視化</h3>
+      <p>ご家族用（青）と支援者用（緑）の記録を時系列で表示します。各点をクリックすると詳細が表示されます。</p>
+      <button id="updateTimelineBtn" class="btn btn-secondary mb-3">タイムライン更新</button>
+      <canvas id="timelineChartCanvas" width="800" height="400" style="height:400px;"></canvas>
+    </div>
+  
+    <!-- 6. トランジションチェックリスト -->
+    <div class="tab-pane fade" id="tab-transition" role="tabpanel" aria-labelledby="transition-tab">
+      <h3 class="mt-3">トランジションチェックリスト</h3>
+      <p>お子さんのライフステージの変化に合わせ、必要なチェック項目を確認・記録します。</p>
+      <form id="transitionForm" class="mb-4">
+        <div id="transitionList">
+          <!-- 初期項目（例）を自動生成 -->
+        </div>
+        <div class="mb-3">
+          <label for="newTransitionItem" class="form-label">新しい項目を追加</label>
+          <input type="text" class="form-control" id="newTransitionItem" placeholder="例：学校進学相談">
+        </div>
+        <button type="button" id="addTransitionBtn" class="btn btn-info mb-3">項目を追加</button>
+        <button type="submit" class="btn btn-primary">チェックリスト更新</button>
+      </form>
+      <h4>チェックリスト一覧</h4>
+      <table class="table table-bordered" id="transitionTable">
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>項目</th>
+            <th>完了</th>
+            <th>メモ</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  
+    <!-- 7. 共有連絡ノート -->
+    <div class="tab-pane fade" id="tab-sharedNote" role="tabpanel" aria-labelledby="sharednote-tab">
+      <h3 class="mt-3">共有連絡ノート</h3>
+      <p>ご家族・支援者・各種専門家間で、連絡事項やアドバイスなどを共有します。</p>
+      <form id="sharedNoteForm" class="mb-4">
+        <div class="mb-3">
+          <label for="noteDate" class="form-label">日付</label>
+          <input type="date" class="form-control" id="noteDate" required>
+        </div>
+        <div class="mb-3">
+          <label for="noteSender" class="form-label">発信者</label>
+          <select class="form-select" id="noteSender" required>
+            <option value="家族">家族</option>
+            <option value="医療">医療</option>
+            <option value="教育">教育</option>
+            <option value="福祉">福祉</option>
+            <option value="その他">その他</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="noteMessage" class="form-label">メッセージ</label>
+          <textarea class="form-control" id="noteMessage" rows="3" placeholder="連絡内容やアドバイスなど" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">ノートを追加</button>
+      </form>
+      <h4>共有連絡ノート一覧</h4>
+      <table class="table table-bordered" id="sharedNoteTable">
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>日付</th>
+            <th>発信者</th>
+            <th>メッセージ</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  
+    <!-- 8. 成長記録 -->
+    <div class="tab-pane fade" id="tab-growth" role="tabpanel" aria-labelledby="growth-tab">
+      <h3 class="mt-3">成長記録</h3>
+      <p>身長・体重などの成長データを記録し、グラフで進捗を確認します。</p>
+      <form id="growthForm" class="mb-4">
+        <div class="mb-3">
+          <label for="growthDate" class="form-label">日付</label>
+          <input type="date" class="form-control" id="growthDate" required>
+        </div>
+        <div class="mb-3">
+          <label for="growthHeight" class="form-label">身長 (cm)</label>
+          <input type="number" class="form-control" id="growthHeight" placeholder="例：75" required>
+        </div>
+        <div class="mb-3">
+          <label for="growthWeight" class="form-label">体重 (kg)</label>
+          <input type="number" class="form-control" id="growthWeight" placeholder="例：8.5" required>
+        </div>
+        <div class="mb-3">
+          <label for="growthMemo" class="form-label">メモ</label>
+          <textarea class="form-control" id="growthMemo" rows="2" placeholder="必要ならばメモを記入"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">記録を追加</button>
+      </form>
+      <h4>成長記録一覧</h4>
+      <table class="table table-bordered" id="growthTable">
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>日付</th>
+            <th>身長 (cm)</th>
+            <th>体重 (kg)</th>
+            <th>メモ</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <button id="updateGrowthChartBtn" class="btn btn-secondary mt-3 mb-3">グラフ更新</button>
+      <div class="row">
+        <div class="col-md-6">
+          <h5>身長グラフ</h5>
+          <canvas id="growthChartHeight" width="400" height="400"></canvas>
+        </div>
+        <div class="col-md-6">
+          <h5>体重グラフ</h5>
+          <canvas id="growthChartWeight" width="400" height="400"></canvas>
+        </div>
+      </div>
+    </div>
+  
+    <!-- 9. 結果一覧（これまでの各記録をまとめて表示） -->
+    <div class="tab-pane fade" id="tab-summary" role="tabpanel" aria-labelledby="summary-tab">
+      <h3 class="mt-3">結果一覧</h3>
+      <button id="excelDownloadBtn" class="btn btn-success mb-3">Excelでダウンロード</button>
+      <div id="summaryContent">
+        <h4>子育て記録（ご家族用）</h4>
+        <div id="summaryFamily"></div>
+        <h4 class="mt-4">子育て記録（支援者用）</h4>
+        <div id="summarySupport"></div>
+        <h4 class="mt-4">病気・困りごと記録</h4>
+        <div id="summaryMedical"></div>
+        <h4 class="mt-4">支援者記録</h4>
+        <div id="summarySupporter"></div>
+        <h4 class="mt-4">トランジションチェックリスト</h4>
+        <div id="summaryTransition"></div>
+        <h4 class="mt-4">共有連絡ノート</h4>
+        <div id="summarySharedNote"></div>
+        <h4 class="mt-4">成長記録</h4>
+        <div id="summaryGrowth"></div>
+      </div>
+    </div>
+  
+  </div><!-- /.tab-content -->
+</div><!-- /.container -->
+
+<!-- モーダル（タイムラインの点クリック時詳細表示用） -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detailModalLabel">記録詳細</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+      </div>
+      <div class="modal-body" id="modalBodyContent">
+        <!-- 詳細内容 -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>&copy; 2025 22q11.2欠失症候群 共同意思決定手帳</p>
+</footer>
+
+<!-- Bootstrap JS (Bundle) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ユーティリティ：localStorageから取得／保存
+function getRecords(key) {
+  return JSON.parse(localStorage.getItem(key)) || [];
+}
+function setRecords(key, records) {
+  localStorage.setItem(key, JSON.stringify(records));
+}
+
+// 各種一覧更新関数（各テーブル・サマリー用）
+function updateTable(tableSelector, key, fields) {
+  const records = getRecords(key);
+  const tbody = document.querySelector(tableSelector + " tbody");
+  tbody.innerHTML = "";
+  records.forEach((record, index) => {
+    const tr = document.createElement("tr");
+    const tdNo = document.createElement("td");
+    tdNo.textContent = index + 1;
+    tr.appendChild(tdNo);
+    fields.forEach(f => {
+      const td = document.createElement("td");
+      td.textContent = record[f] || "";
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+  
+function updateSummary(divId, key, fields, headers) {
+  const records = getRecords(key);
+  let html = "<table class='table table-sm table-striped'><thead><tr><th>No.</th>";
+  headers.forEach(header => {
+    html += `<th>${header}</th>`;
+  });
+  html += "</tr></thead><tbody>";
+  records.forEach((record, index) => {
+    html += `<tr><td>${index + 1}</td>`;
+    fields.forEach(f => {
+      html += `<td>${record[f] || ""}</td>`;
+    });
+    html += "</tr>";
+  });
+  html += "</tbody></table>";
+  document.getElementById(divId).innerHTML = html;
+}
+  
+// --- 既存のフォーム送信処理 ---
+document.getElementById("familyForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const tagSelect = document.getElementById("familyTags");
+  const selectedTags = Array.from(tagSelect.selectedOptions).map(opt => opt.value).join(", ");
+  const record = {
+    date: document.getElementById("familyDate").value,
+    event: document.getElementById("familyEvent").value,
+    message: document.getElementById("familyMessage").value,
+    tags: selectedTags
+  };
+  const records = getRecords("familyRecords");
+  records.push(record);
+  setRecords("familyRecords", records);
+  this.reset();
+  updateTable("#familyTable", "familyRecords", ["date", "event", "message", "tags"]);
+  updateSummary("summaryFamily", "familyRecords", ["date", "event", "message", "tags"], ["年月日", "できごと", "思い・メッセージ", "タグ"]);
+});
+  
+document.getElementById("supportForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const tagSelect = document.getElementById("supportTags");
+  const selectedTags = Array.from(tagSelect.selectedOptions).map(opt => opt.value).join(", ");
+  const record = {
+    date: document.getElementById("supportDate").value,
+    event: document.getElementById("supportEvent").value,
+    message: document.getElementById("supportMessage").value,
+    tags: selectedTags
+  };
+  const records = getRecords("supportRecords");
+  records.push(record);
+  setRecords("supportRecords", records);
+  this.reset();
+  updateTable("#supportTable", "supportRecords", ["date", "event", "message", "tags"]);
+  updateSummary("summarySupport", "supportRecords", ["date", "event", "message", "tags"], ["年月日", "できごと", "思い・メッセージ", "タグ"]);
+});
+  
+document.getElementById("medicalForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const tagSelect = document.getElementById("medicalTags");
+  const selectedTags = Array.from(tagSelect.selectedOptions).map(opt => opt.value).join(", ");
+  const record = {
+    name: document.getElementById("medicalName").value,
+    onset: document.getElementById("medicalOnset").value,
+    memo: document.getElementById("medicalMemo").value,
+    tags: selectedTags
+  };
+  const records = getRecords("medicalRecords");
+  records.push(record);
+  setRecords("medicalRecords", records);
+  this.reset();
+  updateTable("#medicalTable", "medicalRecords", ["name", "onset", "memo", "tags"]);
+  updateSummary("summaryMedical", "medicalRecords", ["name", "onset", "memo", "tags"], ["病名", "発症時期", "メモ", "タグ"]);
+});
+  
+document.getElementById("supporterForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const tagSelect = document.getElementById("supporterTags");
+  const selectedTags = Array.from(tagSelect.selectedOptions).map(opt => opt.value).join(", ");
+  const record = {
+    period: document.getElementById("supporterPeriod").value,
+    name: document.getElementById("supporterName").value,
+    role: document.getElementById("supporterRole").value,
+    contact: document.getElementById("supporterContact").value,
+    note: document.getElementById("supporterNote").value,
+    tags: selectedTags
+  };
+  const records = getRecords("supporterRecords");
+  records.push(record);
+  setRecords("supporterRecords", records);
+  this.reset();
+  updateTable("#supporterTable", "supporterRecords", ["period", "name", "role", "contact", "note", "tags"]);
+  updateSummary("summarySupporter", "supporterRecords", ["period", "name", "role", "contact", "note", "tags"], ["期間", "支援者のお名前", "職種", "連絡先", "備考", "タグ"]);
+});
+  
+// --- 新機能 1: トランジションチェックリスト ---
+function renderTransitionChecklist() {
+  const listContainer = document.getElementById("transitionList");
+  // 初期項目が未登録の場合、設定（初回のみ）
+  if (!localStorage.getItem("transitionChecklist")) {
+    const defaultList = [
+      { id: 1, item: "小児科から成人科への移行", checked: false, note: "" },
+      { id: 2, item: "特別支援学校から一般学校または就学への移行", checked: false, note: "" },
+      { id: 3, item: "医療ケア記録の更新", checked: false, note: "" },
+      { id: 4, item: "福祉サービス申請の確認", checked: false, note: "" },
+      { id: 5, item: "就労支援相談", checked: false, note: "" }
+    ];
+    setRecords("transitionChecklist", defaultList);
+  }
+  const checklist = getRecords("transitionChecklist");
+  listContainer.innerHTML = "";
+  checklist.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "form-check mb-2";
+    div.innerHTML = `
+      <input class="form-check-input transition-checkbox" type="checkbox" data-id="${item.id}" ${item.checked ? "checked" : ""}>
+      <label class="form-check-label">${item.item}</label>
+      <input type="text" class="form-control form-control-sm transition-note mt-1" data-id="${item.id}" placeholder="メモ" value="${item.note}">
+    `;
+    listContainer.appendChild(div);
+  });
+}
+  
+document.getElementById("addTransitionBtn").addEventListener("click", function() {
+  const newItemText = document.getElementById("newTransitionItem").value.trim();
+  if (newItemText === "") return;
+  let checklist = getRecords("transitionChecklist");
+  const newId = checklist.length ? Math.max(...checklist.map(item => item.id)) + 1 : 1;
+  checklist.push({ id: newId, item: newItemText, checked: false, note: "" });
+  setRecords("transitionChecklist", checklist);
+  document.getElementById("newTransitionItem").value = "";
+  renderTransitionChecklist();
+});
+  
+document.getElementById("transitionForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  let checklist = getRecords("transitionChecklist");
+  // 更新各項目（チェック状態とノート）
+  document.querySelectorAll(".transition-checkbox").forEach(checkbox => {
+    const id = parseInt(checkbox.getAttribute("data-id"));
+    const item = checklist.find(i => i.id === id);
+    if (item) {
+      item.checked = checkbox.checked;
+    }
+  });
+  document.querySelectorAll(".transition-note").forEach(input => {
+    const id = parseInt(input.getAttribute("data-id"));
+    const item = checklist.find(i => i.id === id);
+    if (item) {
+      item.note = input.value;
+    }
+  });
+  setRecords("transitionChecklist", checklist);
+  renderTransitionChecklist();
+  updateSummary("summaryTransition", "transitionChecklist", ["item", "checked", "note"], ["項目", "完了", "メモ"]);
+});
+  
+// --- 新機能 2: 共有連絡ノート ---
+document.getElementById("sharedNoteForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const record = {
+    date: document.getElementById("noteDate").value,
+    sender: document.getElementById("noteSender").value,
+    message: document.getElementById("noteMessage").value
+  };
+  const records = getRecords("sharedNotes");
+  records.push(record);
+  setRecords("sharedNotes", records);
+  this.reset();
+  updateTable("#sharedNoteTable", "sharedNotes", ["date", "sender", "message"]);
+  updateSummary("summarySharedNote", "sharedNotes", ["date", "sender", "message"], ["日付", "発信者", "メッセージ"]);
+});
+  
+// --- 新機能 3: 成長記録＆進捗グラフ ---
+document.getElementById("growthForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  const record = {
+    date: document.getElementById("growthDate").value,
+    height: document.getElementById("growthHeight").value,
+    weight: document.getElementById("growthWeight").value,
+    memo: document.getElementById("growthMemo").value
+  };
+  const records = getRecords("growthRecords");
+  records.push(record);
+  setRecords("growthRecords", records);
+  this.reset();
+  updateTable("#growthTable", "growthRecords", ["date", "height", "weight", "memo"]);
+  updateSummary("summaryGrowth", "growthRecords", ["date", "height", "weight", "memo"], ["日付", "身長 (cm)", "体重 (kg)", "メモ"]);
+});
+  
+document.getElementById("updateGrowthChartBtn").addEventListener("click", function() {
+  const records = getRecords("growthRecords").sort((a, b) => new Date(a.date) - new Date(b.date));
+  const dates = records.map(r => r.date);
+  const heights = records.map(r => Number(r.height));
+  const weights = records.map(r => Number(r.weight));
+  
+  // 身長グラフ
+  const ctxHeight = document.getElementById("growthChartHeight").getContext("2d");
+  new Chart(ctxHeight, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [{
+        label: '身長 (cm)',
+        data: heights,
+        borderColor: 'rgb(255,99,132)',
+        fill: false,
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } },
+      scales: {
+        x: { type: 'time', time: { unit: 'month' }, title: { display: true, text: '日付' } },
+        y: { title: { display: true, text: '身長 (cm)' } }
+      }
+    }
+  });
+  
+  // 体重グラフ
+  const ctxWeight = document.getElementById("growthChartWeight").getContext("2d");
+  new Chart(ctxWeight, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [{
+        label: '体重 (kg)',
+        data: weights,
+        borderColor: 'rgb(54,162,235)',
+        fill: false,
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } },
+      scales: {
+        x: { type: 'time', time: { unit: 'month' }, title: { display: true, text: '日付' } },
+        y: { title: { display: true, text: '体重 (kg)' } }
+      }
+    }
+  });
+});
+  
+// --- タイムライン可視化 ---
+let timelineChart;
+function updateTimelineChart() {
+  const familyRecords = getRecords("familyRecords");
+  const supportRecords = getRecords("supportRecords");
+  const familyData = familyRecords.map(record => ({ x: new Date(record.date), y: 1, record: record }));
+  const supportData = supportRecords.map(record => ({ x: new Date(record.date), y: 2, record: record }));
+  const ctx = document.getElementById("timelineChartCanvas").getContext("2d");
+  if (timelineChart) timelineChart.destroy();
+  timelineChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: 'ご家族用',
+          data: familyData,
+          backgroundColor: 'rgba(0,123,255,0.7)',
+          pointRadius: 6,
+          pointHoverRadius: 8
+        },
+        {
+          label: '支援者用',
+          data: supportData,
+          backgroundColor: 'rgba(40,167,69,0.7)',
+          pointRadius: 6,
+          pointHoverRadius: 8
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { type: 'time', time: { unit: 'day' }, title: { display: true, text: '日付' } },
+        y: {
+          type: 'linear',
+          min: 0,
+          max: 3,
+          ticks: {
+            stepSize: 1,
+            callback: function(value) {
+              if (value === 1) return 'ご家族用';
+              if (value === 2) return '支援者用';
+              return '';
+            }
+          },
+          title: { display: true, text: 'カテゴリー' }
+        }
+      },
+      onClick: function(event, elements) {
+        if (elements.length > 0) {
+          var element = elements[0];
+          var datasetIndex = element.datasetIndex;
+          var index = element.index;
+          var dataset = this.data.datasets[datasetIndex];
+          var rec = dataset.data[index].record;
+          var modalBody = document.getElementById("modalBodyContent");
+          modalBody.innerHTML = `<p><strong>カテゴリー:</strong> ${dataset.label}</p>
+                                 <p><strong>日付:</strong> ${rec.date}</p>
+                                 <p><strong>できごと:</strong> ${rec.event}</p>
+                                 <p><strong>思い・メッセージ:</strong> ${rec.message}</p>
+                                 <p><strong>タグ:</strong> ${rec.tags || ""}</p>`;
+          var myModal = new bootstrap.Modal(document.getElementById("detailModal"));
+          myModal.show();
+        }
+      }
+    }
+  });
+}
+  
+// --- Excelダウンロード ---
+document.getElementById("excelDownloadBtn").addEventListener("click", function() {
+  var wb = XLSX.utils.book_new();
+  var familyRecords = getRecords("familyRecords");
+  var wsFamily = XLSX.utils.json_to_sheet(familyRecords);
+  XLSX.utils.book_append_sheet(wb, wsFamily, "ご家族用記録");
+  
+  var supportRecords = getRecords("supportRecords");
+  var wsSupport = XLSX.utils.json_to_sheet(supportRecords);
+  XLSX.utils.book_append_sheet(wb, wsSupport, "支援者用記録");
+  
+  var medicalRecords = getRecords("medicalRecords");
+  var wsMedical = XLSX.utils.json_to_sheet(medicalRecords);
+  XLSX.utils.book_append_sheet(wb, wsMedical, "病気・困りごと記録");
+  
+  var supporterRecords = getRecords("supporterRecords");
+  var wsSupporter = XLSX.utils.json_to_sheet(supporterRecords);
+  XLSX.utils.book_append_sheet(wb, wsSupporter, "支援者記録");
+  
+  var transitionList = getRecords("transitionChecklist");
+  var wsTransition = XLSX.utils.json_to_sheet(transitionList);
+  XLSX.utils.book_append_sheet(wb, wsTransition, "トランジションチェックリスト");
+  
+  var sharedNotes = getRecords("sharedNotes");
+  var wsShared = XLSX.utils.json_to_sheet(sharedNotes);
+  XLSX.utils.book_append_sheet(wb, wsShared, "共有連絡ノート");
+  
+  var growthRecords = getRecords("growthRecords");
+  var wsGrowth = XLSX.utils.json_to_sheet(growthRecords);
+  XLSX.utils.book_append_sheet(wb, wsGrowth, "成長記録");
+  
+  XLSX.writeFile(wb, "22q11.2_handbook.xlsx");
+});
+  
+// --- ページロード時の初期更新 ---
+document.addEventListener("DOMContentLoaded", function() {
+  updateTable("#familyTable", "familyRecords", ["date", "event", "message", "tags"]);
+  updateTable("#supportTable", "supportRecords", ["date", "event", "message", "tags"]);
+  updateTable("#medicalTable", "medicalRecords", ["name", "onset", "memo", "tags"]);
+  updateTable("#supporterTable", "supporterRecords", ["period", "name", "role", "contact", "note", "tags"]);
+  updateTable("#sharedNoteTable", "sharedNotes", ["date", "sender", "message"]);
+  updateTable("#growthTable", "growthRecords", ["date", "height", "weight", "memo"]);
+  renderTransitionChecklist();
+  
+  updateSummary("summaryFamily", "familyRecords", ["date", "event", "message", "tags"], ["年月日", "できごと", "思い・メッセージ", "タグ"]);
+  updateSummary("summarySupport", "supportRecords", ["date", "event", "message", "tags"], ["年月日", "できごと", "思い・メッセージ", "タグ"]);
+  updateSummary("summaryMedical", "medicalRecords", ["name", "onset", "memo", "tags"], ["病名", "発症時期", "メモ", "タグ"]);
+  updateSummary("summarySupporter", "supporterRecords", ["period", "name", "role", "contact", "note", "tags"], ["期間", "支援者のお名前", "職種", "連絡先", "備考", "タグ"]);
+  updateSummary("summaryTransition", "transitionChecklist", ["item", "checked", "note"], ["項目", "完了", "メモ"]);
+  updateSummary("summarySharedNote", "sharedNotes", ["date", "sender", "message"], ["日付", "発信者", "メッセージ"]);
+  updateSummary("summaryGrowth", "growthRecords", ["date", "height", "weight", "memo"], ["日付", "身長 (cm)", "体重 (kg)", "メモ"]);
+});
+  
+// --- ボタンイベント ---
+document.getElementById("updateTimelineBtn").addEventListener("click", function() {
+  updateTimelineChart();
+});
+  
+document.getElementById("updateGrowthChartBtn").addEventListener("click", function() {
+  // グラフ更新（身長と体重それぞれ）
+  const records = getRecords("growthRecords").sort((a, b) => new Date(a.date) - new Date(b.date));
+  const dates = records.map(r => r.date);
+  const heights = records.map(r => Number(r.height));
+  const weights = records.map(r => Number(r.weight));
+  
+  // 身長グラフ
+  const ctxHeight = document.getElementById("growthChartHeight").getContext("2d");
+  new Chart(ctxHeight, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [{
+        label: '身長 (cm)',
+        data: heights,
+        borderColor: 'rgb(255,99,132)',
+        fill: false,
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } },
+      scales: {
+        x: { type: 'time', time: { unit: 'month' }, title: { display: true, text: '日付' } },
+        y: { title: { display: true, text: '身長 (cm)' } }
+      }
+    }
+  });
+  
+  // 体重グラフ
+  const ctxWeight = document.getElementById("growthChartWeight").getContext("2d");
+  new Chart(ctxWeight, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [{
+        label: '体重 (kg)',
+        data: weights,
+        borderColor: 'rgb(54,162,235)',
+        fill: false,
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } },
+      scales: {
+        x: { type: 'time', time: { unit: 'month' }, title: { display: true, text: '日付' } },
+        y: { title: { display: true, text: '体重 (kg)' } }
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>
